@@ -1,4 +1,4 @@
-namespace ESuitePro.RedisMessenger;
+namespace RedisMessenger;
 
 public record RedisMessengerConfiguration
 {

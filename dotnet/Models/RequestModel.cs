@@ -1,4 +1,4 @@
-namespace ESuitePro.RedisMessenger.Models;
+namespace RedisMessenger.Models;
 
 internal record RequestModel(
     string RequestId,

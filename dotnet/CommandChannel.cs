@@ -4,8 +4,8 @@ using System.Text.Json;
 using Microsoft.Toolkit.HighPerformance;
 using StackExchange.Redis;
 
-using ESuitePro.RedisMessenger.Models;
-namespace ESuitePro.RedisMessenger;
+using RedisMessenger.Models;
+namespace RedisMessenger;
 
 internal class MessageChannel<TReq, TRes> : IMessageChannel<TReq, TRes>
 {

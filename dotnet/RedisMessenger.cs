@@ -1,6 +1,6 @@
 using StackExchange.Redis;
 
-namespace ESuitePro.RedisMessenger;
+namespace RedisMessenger;
 
 public sealed class RedisMessenger : IDisposable
 {
