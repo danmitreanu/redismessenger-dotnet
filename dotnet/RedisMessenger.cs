@@ -1,34 +1,73 @@
+using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 
 namespace RedisMessenger;
 
-public sealed class RedisMessenger : IDisposable
+public sealed class RedisMessenger : IRedisMessenger, IDisposable
 {
     private readonly ConnectionMultiplexer _redis;
     private readonly string _clientName;
     private readonly string? _channelPrefix = null;
+    private readonly MessageHandlerFactory _handlerFactory;
 
-    public RedisMessenger(string redisConfigString, Action<RedisMessengerConfiguration> redisConfigure)
+    internal RedisMessenger(RedisMessengerConfiguration config, IServiceProvider serviceProvider)
     {
-        RedisMessengerConfiguration config = new();
-        redisConfigure(config);
+        if (config.RedisConfiguration is null)
+            throw new RedisMessengerException($"{nameof(RedisMessengerConfiguration)} is missing required parameter {nameof(RedisMessengerConfiguration.RedisConfiguration)}");
 
-        _redis = ConnectionMultiplexer.Connect(redisConfigString, LibConfigToRedisConfig(config));
-        _channelPrefix = config.ChannelPrefix is not null ? $"{config.ChannelPrefix}:" : null;
+        _redis = ConnectionMultiplexer.Connect(config.RedisConfiguration, LibConfigToRedisConfig(config));
+        _channelPrefix = config.ChannelPrefix is not null ? $"{config.ChannelPrefix}_" : null;
         _clientName = config.ClientName ?? Guid.NewGuid().ToString();
+
+        var handlers = config.MessageHandlers as MessageHandlerCollection;
+        _handlerFactory = handlers!.BuildFactory(serviceProvider);
+
+        BindHandlers();
+    }
+
+    public static IRedisMessenger Create(Action<RedisMessengerConfiguration> configure)
+    {
+        ServiceCollection services = new();
+        RedisMessengerConfiguration config = new(services);
+        configure(config);
+
+        services.AddSingleton<IRedisMessenger>(serviceProvider => new RedisMessenger(config, serviceProvider));
+        var provider = services.BuildServiceProvider();
+
+        return provider.GetRequiredService<IRedisMessenger>();
     }
 
     public IMessageChannel<TReq, TRes> GetMessageChannel<TReq, TRes>(string channelName, TimeSpan? defaultTimeout = null)
     {
         ISubscriber pubsub = _redis.GetSubscriber();
-        string mainChannel = $"{_channelPrefix}{channelName}";
-
-        return new MessageChannel<TReq, TRes>(pubsub, mainChannel, _clientName);
+        return new MessageChannel<TReq, TRes>(pubsub, _channelPrefix, channelName, _clientName, defaultTimeout);
     }
 
-    public static string CreateRequestChannelName(string channelName, string clientName) => $"{channelName}:req-{clientName}";
-    public static string CreateResponseChannelName(string channelName, string clientName) => $"{channelName}:res-{clientName}";
-    public static string CreateHandlerRequestChannelPattern(string channelName) => $"{channelName}:req-*";
+    private void BindHandlers()
+    {
+        ISubscriber handlerSub = _redis.GetSubscriber();
+        foreach (string channelName in _handlerFactory.RegisteredChannels)
+        {
+            string channelPattern = CreateHandlerRequestChannelPattern(_channelPrefix, channelName);
+            RedisChannel incomingChannel = new(channelPattern, RedisChannel.PatternMode.Pattern);
+
+            handlerSub.Subscribe(incomingChannel, (_, requestPayload) =>
+            {
+                Task.Run(() =>
+                {
+                    var handler = _handlerFactory.GetHandler(channelName);
+                    // todo: handler requestPayload
+                });
+            });
+        }
+    }
+
+    public static string CreateRequestChannelName(string? channelPrefix, string channelName, string clientName)
+        => $"{channelName}:req-{clientName}";
+    public static string CreateResponseChannelName(string? channelPrefix, string channelName, string clientName)
+        => $"{channelName}:res-{clientName}";
+    public static string CreateHandlerRequestChannelPattern(string? channelPrefix, string channelName)
+        => $"{channelName}:req-*";
 
     private static Action<ConfigurationOptions> LibConfigToRedisConfig(RedisMessengerConfiguration libConfig)
     {

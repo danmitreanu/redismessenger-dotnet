@@ -22,12 +22,12 @@ internal class MessageChannel<TReq, TRes> : IMessageChannel<TReq, TRes>
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    public MessageChannel(ISubscriber pubsub, string channelName, string clientName, TimeSpan? defaultTimeout = null)
+    public MessageChannel(ISubscriber pubsub, string? channelPrefix, string channelName, string clientName, TimeSpan? defaultTimeout)
     {
         _clientName = clientName;
         _pubsub = pubsub;
-        string reqChannel = RedisMessenger.CreateRequestChannelName(channelName, clientName);
-        string resChannel = RedisMessenger.CreateResponseChannelName(channelName, clientName);
+        string reqChannel = RedisMessenger.CreateRequestChannelName(channelPrefix, channelName, clientName);
+        string resChannel = RedisMessenger.CreateResponseChannelName(channelPrefix, channelName, clientName);
 
         _reqChannel = new RedisChannel(reqChannel, RedisChannel.PatternMode.Literal);
         _resChannel = new RedisChannel(resChannel, RedisChannel.PatternMode.Literal);
@@ -100,7 +100,7 @@ internal class MessageChannel<TReq, TRes> : IMessageChannel<TReq, TRes>
         _subscribed = true;
     }
 
-    private async Task HandleResponseAsync(RedisChannel channel, RedisValue value)
+    private async Task HandleResponseAsync(RedisChannel _, RedisValue value)
     {
         if (!value.HasValue || value.IsNullOrEmpty)
             return;
