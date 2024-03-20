@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
 namespace RedisMessenger;
@@ -9,6 +10,7 @@ public sealed class RedisMessenger : IRedisMessenger, IDisposable
     private readonly string _clientName;
     private readonly string? _channelPrefix = null;
     private readonly MessageHandlerFactory _handlerFactory;
+    private readonly ILogger? _logger;
 
     internal RedisMessenger(RedisMessengerConfiguration config, IServiceProvider serviceProvider)
     {
@@ -21,6 +23,8 @@ public sealed class RedisMessenger : IRedisMessenger, IDisposable
 
         var handlers = config.MessageHandlers as MessageHandlerCollection;
         _handlerFactory = handlers!.BuildFactory(serviceProvider);
+
+        _logger = serviceProvider.GetService<ILogger<IRedisMessenger>>();
 
         BindHandlers();
     }
