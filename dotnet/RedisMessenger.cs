@@ -23,7 +23,11 @@ public sealed class RedisMessenger : IRedisMessenger, IDisposable
         if (config.RedisConfiguration is null)
             throw new RedisMessengerException($"{nameof(RedisMessengerConfiguration)} is missing required parameter {nameof(RedisMessengerConfiguration.RedisConfiguration)}");
 
-        _redis = ConnectionMultiplexer.Connect(config.RedisConfiguration/*, LibConfigToRedisConfig(config)*/);
+        var redisConfiguration = ConfigurationOptions.Parse(config.RedisConfiguration);
+        config.RedisConfigure?.Invoke(redisConfiguration);
+
+        _redis = ConnectionMultiplexer.Connect(redisConfiguration);
+
         _channelPrefix = config.ChannelPrefix is not null ? $"{config.ChannelPrefix}_" : null;
         _clientName = config.ClientName ?? Guid.NewGuid().ToString();
 
@@ -84,23 +88,6 @@ public sealed class RedisMessenger : IRedisMessenger, IDisposable
         => $"{channelPrefix}{channelName}:res-{clientName}";
     public static string CreateHandlerRequestChannelPattern(string? channelPrefix, string channelName)
         => $"{channelPrefix}{channelName}:req-*";
-
-    private static Action<ConfigurationOptions> LibConfigToRedisConfig(RedisMessengerConfiguration libConfig)
-    {
-        return configure =>
-        {
-            configure.AbortOnConnectFail = false;
-            configure.ReconnectRetryPolicy = new LinearRetry(libConfig.ReconnectInterval.Milliseconds);
-            configure.ConnectRetry = int.Max(0, libConfig.ConnectRetry);
-            configure.ConnectTimeout = libConfig.ConnectTimeout.Milliseconds;
-            if (libConfig.User is not null)
-                configure.User = libConfig.User;
-            if (libConfig.Password is not null)
-                configure.Password  = libConfig.Password;
-            if (libConfig.ClientName is not null)
-                configure.ClientName = libConfig.ClientName;
-        };
-    }
 
     private bool _disposed = false;
     public void Dispose()

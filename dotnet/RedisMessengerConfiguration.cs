@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 
 namespace RedisMessenger;
 
@@ -6,12 +7,9 @@ public sealed class RedisMessengerConfiguration
 {
     public string? RedisConfiguration { get; set; }
     public string? ClientName { get; set; }
-    public TimeSpan ReconnectInterval { get; set; } = TimeSpan.FromSeconds(5);
     public string? ChannelPrefix { get; set; }
-    public int ConnectRetry { get; set; } = 5;
-    public TimeSpan ConnectTimeout { get; set; } = TimeSpan.FromSeconds(5);
-    public string? User { get; set; }
-    public string? Password { get; set; }
+
+    public Action<ConfigurationOptions>? RedisConfigure { get; set; }
 
     public IMessageHandlerCollection MessageHandlers { get; }
 
