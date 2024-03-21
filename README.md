@@ -40,7 +40,7 @@ Woooo, now let's send some messages or something:
 
 ```csharp
 var channel = messenger.GetMessageChannel<MyMessageRequest, MyMessageResponse>("my-message-channel");
-await channel.SendAsync(new MyMessageRequest()); // Fire and forget
+await channel.SendAsync(new MyMessageRequest()); // Fire and forget, just like walking away from an explosion
 
 try
 {
@@ -73,6 +73,9 @@ class MyRawMessageHandler : RedisMessenger.MessageHandler
 
 class MyMessageHandler : RedisMessenger.MessageHandler<RequestType, ResponseType>
 {
+    private readonly ILogger _logger;
+    public MyMessageHandler(ILogger<MyMessageHandler> logger) => _logger = logger;
+
     protected override async Task<ResponseType> HandleMessageAsync(RequestType? payload)
     {
         // JSON deserialization errors and exceptions will be reported to the message sender.
@@ -80,3 +83,7 @@ class MyMessageHandler : RedisMessenger.MessageHandler<RequestType, ResponseType
     }
 }
 ```
+
+## Dependency injection
+
+As you can see, other services can be injected into your message handlers. Each message has its own scope just like ASP.NET Core HTTP requests.
