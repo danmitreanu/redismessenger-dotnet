@@ -62,6 +62,7 @@ class TestHandler : MessageHandler<TestRequest, TestResponse>
 {
     protected override Task<TestResponse> HandleMessageAsync(TestRequest? payload)
     {
+        Console.WriteLine("Received {0}", payload?.Message);
         string responseMessage = $"Woah, did you just say {payload?.Message}?";
         return Task.FromResult(new TestResponse { Message = responseMessage });
     }

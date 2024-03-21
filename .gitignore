@@ -4,8 +4,6 @@
 
 **/DS_Store
 
-dotnet/**/bin
-dotnet/**/obj
-dotnet_test/**/bin
-dotnet_test/**/obj
+*/**/bin
+*/**/obj
 
