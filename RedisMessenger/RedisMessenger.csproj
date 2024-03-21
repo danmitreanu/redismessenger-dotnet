@@ -5,13 +5,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>RedisMessenger</PackageId>
-    <PackageVersion>0.1.0</PackageVersion>
-    <Version>0.1.0</Version>
+    <PackageVersion>0.1.1</PackageVersion>
+    <Version>0.1.1</Version>
     <Authors>github.com/danmitreanu</Authors>
     <Description>Distributed messaging with Redis</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <RepositoryUrl>https://github.com/danmitreanu/RedisMessenger</RepositoryUrl>
+    <RepositoryUrl>https://github.com/danmitreanu/redismessenger-dotnet</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
