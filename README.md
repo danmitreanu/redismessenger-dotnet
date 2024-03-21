@@ -2,6 +2,14 @@
 
 The RedisMessenger .NET Client allows you to use Redis as a message broker to communicate between applications that implement the RedisMessenger protocol.
 
+## Install
+
+You can install this library via [NuGet](https://www.nuget.org/packages/RedisMessenger/):
+
+```sh
+dotnet add package RedisMessenger
+```
+
 ## Usage
 
 RedisMessenger can be used either on its own or as an injectable service.
@@ -93,3 +101,7 @@ As you can see, other services can be injected into your message handlers. Each 
 ## Redis configuration
 
 This library is built upon [`StackExchange.Redis`](https://www.nuget.org/packages/StackExchange.Redis/) and allows you to configure the Redis connection as you wish via `RedisMessengerConfiguration.RedisConfigure` and `RedisMessengerConfiguration.RedisConfiguration`.
+
+## License
+
+MIT. Have fun.
