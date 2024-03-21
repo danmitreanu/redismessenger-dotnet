@@ -84,6 +84,12 @@ class MyMessageHandler : RedisMessenger.MessageHandler<RequestType, ResponseType
 }
 ```
 
+You can only register one message handler per channel.
+
 ## Dependency injection
 
 As you can see, other services can be injected into your message handlers. Each message has its own scope just like ASP.NET Core HTTP requests.
+
+## Redis configuration
+
+This library is built upon [`StackExchange.Redis`](https://www.nuget.org/packages/StackExchange.Redis/) and allows you to configure the Redis connection as you wish via `RedisMessengerConfiguration.RedisConfigure` and `RedisMessengerConfiguration.RedisConfiguration`.
