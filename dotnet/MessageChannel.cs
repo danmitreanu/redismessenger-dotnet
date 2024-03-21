@@ -61,8 +61,12 @@ internal class MessageChannel<TReq, TRes> : IMessageChannel<TReq, TRes>
         var redisValue = RedisValue.CreateFrom(stream);
         await _pubsub.PublishAsync(_reqChannel, redisValue);
 
-        TaskCompletionSource<TRes> tcs = new(TaskCreationOptions.AttachedToParent);
-        void cancelTask(CancellationToken ct) => tcs.TrySetCanceled(ct);
+        TaskCompletionSource<TRes?> tcs = new(TaskCreationOptions.AttachedToParent);
+        _resTasks.TryAdd(reqId, tcs);
+        void cancelTask(CancellationToken ct)
+        {
+            tcs.TrySetCanceled(ct);
+        }
 
         CancellationTokenSource? cts = null;
         CancellationTokenRegistration ctr;
@@ -121,15 +125,22 @@ internal class MessageChannel<TReq, TRes> : IMessageChannel<TReq, TRes>
             return null;
         }
 
-        Stream? payloadStream = GetPayloadStream();
+        using Stream? payloadStream = GetPayloadStream();
 
         if (payloadStream is null)
             return;
 
         var metaResponse = (await JsonSerializer.DeserializeAsync<ResponseModel<TRes>>(payloadStream, s_jsonOpts))!;
 
-        if (!_resTasks.TryGetValue(metaResponse.ReplyTo, out var tcs))
+        if (!_resTasks.TryRemove(metaResponse.ReplyTo, out var tcs))
             return;
+
+        if (!metaResponse.Success)
+        {
+            RedisMessengerResponseException ex = new($"The redis message has failed in the message handler: {metaResponse.ErrorMessage}");
+            tcs.TrySetException(ex);
+            return;
+        }
 
         tcs.TrySetResult(metaResponse.Payload);
     }

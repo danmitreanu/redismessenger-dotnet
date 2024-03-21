@@ -6,4 +6,6 @@
 
 dotnet/**/bin
 dotnet/**/obj
+dotnet_test/**/bin
+dotnet_test/**/obj
 

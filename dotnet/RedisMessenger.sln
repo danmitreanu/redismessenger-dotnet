@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisMessenger", "RedisMessenger.csproj", "{0EDF8C35-1A52-4F20-B393-0A52050E4DF3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisMessenger.Test", "..\dotnet_test\RedisMessenger.Test.csproj", "{6CE9C7EB-9FCD-4905-83F9-155F35A40281}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{0EDF8C35-1A52-4F20-B393-0A52050E4DF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0EDF8C35-1A52-4F20-B393-0A52050E4DF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0EDF8C35-1A52-4F20-B393-0A52050E4DF3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6CE9C7EB-9FCD-4905-83F9-155F35A40281}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CE9C7EB-9FCD-4905-83F9-155F35A40281}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CE9C7EB-9FCD-4905-83F9-155F35A40281}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CE9C7EB-9FCD-4905-83F9-155F35A40281}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

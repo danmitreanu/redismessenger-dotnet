@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
@@ -12,12 +13,17 @@ public sealed class RedisMessenger : IRedisMessenger, IDisposable
     private readonly MessageHandlerFactory _handlerFactory;
     private readonly ILogger? _logger;
 
+    internal static readonly JsonSerializerOptions s_jsonOpts = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
     internal RedisMessenger(RedisMessengerConfiguration config, IServiceProvider serviceProvider)
     {
         if (config.RedisConfiguration is null)
             throw new RedisMessengerException($"{nameof(RedisMessengerConfiguration)} is missing required parameter {nameof(RedisMessengerConfiguration.RedisConfiguration)}");
 
-        _redis = ConnectionMultiplexer.Connect(config.RedisConfiguration, LibConfigToRedisConfig(config));
+        _redis = ConnectionMultiplexer.Connect(config.RedisConfiguration/*, LibConfigToRedisConfig(config)*/);
         _channelPrefix = config.ChannelPrefix is not null ? $"{config.ChannelPrefix}_" : null;
         _clientName = config.ClientName ?? Guid.NewGuid().ToString();
 
@@ -55,23 +61,29 @@ public sealed class RedisMessenger : IRedisMessenger, IDisposable
             string channelPattern = CreateHandlerRequestChannelPattern(_channelPrefix, channelName);
             RedisChannel incomingChannel = new(channelPattern, RedisChannel.PatternMode.Pattern);
 
-            handlerSub.Subscribe(incomingChannel, (_, requestPayload) =>
+            handlerSub.Subscribe(incomingChannel, (requestChannel, requestPayload) =>
             {
-                Task.Run(() =>
+                Task.Run(async () =>
                 {
                     var handler = _handlerFactory.GetHandler(channelName);
-                    // todo: handler requestPayload
+                    if (handler is null)
+                    {
+                        _logger?.LogError("Failed to get message handler for channel {channelName}", channelName);
+                        return;
+                    }
+
+                    await handler.HandleMessageAsync(requestChannel, handlerSub, _logger, _channelPrefix, channelName, requestPayload);
                 });
             });
         }
     }
 
     public static string CreateRequestChannelName(string? channelPrefix, string channelName, string clientName)
-        => $"{channelName}:req-{clientName}";
+        => $"{channelPrefix}{channelName}:req-{clientName}";
     public static string CreateResponseChannelName(string? channelPrefix, string channelName, string clientName)
-        => $"{channelName}:res-{clientName}";
+        => $"{channelPrefix}{channelName}:res-{clientName}";
     public static string CreateHandlerRequestChannelPattern(string? channelPrefix, string channelName)
-        => $"{channelName}:req-*";
+        => $"{channelPrefix}{channelName}:req-*";
 
     private static Action<ConfigurationOptions> LibConfigToRedisConfig(RedisMessengerConfiguration libConfig)
     {
@@ -81,8 +93,12 @@ public sealed class RedisMessenger : IRedisMessenger, IDisposable
             configure.ReconnectRetryPolicy = new LinearRetry(libConfig.ReconnectInterval.Milliseconds);
             configure.ConnectRetry = int.Max(0, libConfig.ConnectRetry);
             configure.ConnectTimeout = libConfig.ConnectTimeout.Milliseconds;
-            configure.User = libConfig.User;
-            configure.Password  = libConfig.Password;
+            if (libConfig.User is not null)
+                configure.User = libConfig.User;
+            if (libConfig.Password is not null)
+                configure.Password  = libConfig.Password;
+            if (libConfig.ClientName is not null)
+                configure.ClientName = libConfig.ClientName;
         };
     }
 
