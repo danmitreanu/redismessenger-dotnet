@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 using RedisMessenger;
@@ -25,6 +26,7 @@ var messenger = provider.GetRequiredService<IRedisMessenger>();
 
 var channel = messenger.GetMessageChannel<TestRequest, TestResponse>("test-channel");
 
+Stopwatch stopwatch = new();
 string? msg = Console.ReadLine();
 do
 {
@@ -36,7 +38,12 @@ do
     TestResponse? res = null;
     try
     {
+        stopwatch.Start();
         res = await channel.QueryAsync(req);
+        stopwatch.Stop();
+
+        Console.WriteLine($"Query took {stopwatch.ElapsedMilliseconds} ms");
+        stopwatch.Reset();
     }
     catch
     {

@@ -62,8 +62,8 @@ public sealed class RedisMessenger : IRedisMessenger, IDisposable
         ISubscriber handlerSub = _redis.GetSubscriber();
         foreach (string channelName in _handlerFactory.RegisteredChannels)
         {
-            string channelPattern = CreateHandlerRequestChannelPattern(_channelPrefix, channelName);
-            RedisChannel incomingChannel = new(channelPattern, RedisChannel.PatternMode.Pattern);
+            string channelPattern = CreateRequestChannelName(_channelPrefix, channelName);
+            RedisChannel incomingChannel = new(channelPattern, RedisChannel.PatternMode.Literal);
 
             handlerSub.Subscribe(incomingChannel, (requestChannel, requestPayload) =>
             {
@@ -82,12 +82,10 @@ public sealed class RedisMessenger : IRedisMessenger, IDisposable
         }
     }
 
-    public static string CreateRequestChannelName(string? channelPrefix, string channelName, string clientName)
-        => $"{channelPrefix}{channelName}:req-{clientName}";
+    public static string CreateRequestChannelName(string? channelPrefix, string channelName)
+        => $"{channelPrefix}{channelName}:req";
     public static string CreateResponseChannelName(string? channelPrefix, string channelName, string clientName)
-        => $"{channelPrefix}{channelName}:res-{clientName}";
-    public static string CreateHandlerRequestChannelPattern(string? channelPrefix, string channelName)
-        => $"{channelPrefix}{channelName}:req-*";
+        => $"{channelPrefix}{channelName}:res_{clientName}";
 
     private bool _disposed = false;
     public void Dispose()

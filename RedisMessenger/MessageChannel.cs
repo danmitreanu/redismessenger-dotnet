@@ -26,7 +26,7 @@ internal class MessageChannel<TReq, TRes> : IMessageChannel<TReq, TRes>
     {
         _clientName = clientName;
         _pubsub = pubsub;
-        string reqChannel = RedisMessenger.CreateRequestChannelName(channelPrefix, channelName, clientName);
+        string reqChannel = RedisMessenger.CreateRequestChannelName(channelPrefix, channelName);
         string resChannel = RedisMessenger.CreateResponseChannelName(channelPrefix, channelName, clientName);
 
         _reqChannel = new RedisChannel(reqChannel, RedisChannel.PatternMode.Literal);
@@ -137,7 +137,8 @@ internal class MessageChannel<TReq, TRes> : IMessageChannel<TReq, TRes>
 
         if (!metaResponse.Success)
         {
-            RedisMessengerResponseException ex = new($"The redis message has failed in the message handler: {metaResponse.ErrorMessage}");
+            const string BasicErrorMessage = "An error occured in the message handler";
+            RedisMessengerResponseException ex = new(metaResponse.ErrorMessage ?? BasicErrorMessage);
             tcs.TrySetException(ex);
             return;
         }
