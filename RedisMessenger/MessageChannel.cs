@@ -58,15 +58,13 @@ internal class MessageChannel<TReq, TRes> : IMessageChannel<TReq, TRes>
         using MemoryStream stream = new();
         await JsonSerializer.SerializeAsync(stream, req, s_jsonOpts, CancellationToken.None);
 
+        TaskCompletionSource<TRes?> tcs = new(TaskCreationOptions.AttachedToParent);
+        _resTasks.TryAdd(reqId, tcs);
+
         var redisValue = RedisValue.CreateFrom(stream);
         await _pubsub.PublishAsync(_reqChannel, redisValue);
 
-        TaskCompletionSource<TRes?> tcs = new(TaskCreationOptions.AttachedToParent);
-        _resTasks.TryAdd(reqId, tcs);
-        void cancelTask(CancellationToken ct)
-        {
-            tcs.TrySetCanceled(ct);
-        }
+        void cancelTask(CancellationToken ct) => tcs.TrySetCanceled(ct);
 
         CancellationTokenSource? cts = null;
         CancellationTokenRegistration ctr;
@@ -81,7 +79,15 @@ internal class MessageChannel<TReq, TRes> : IMessageChannel<TReq, TRes>
             ctr = cts.Token.Register(() => cancelTask(cts.Token));
         }
 
-        TRes? res = await tcs.Task;
+        TRes? res;
+        try
+        {
+            res = await tcs.Task;
+        }
+        finally
+        {
+            _resTasks.TryRemove(reqId, out _);
+        }
 
         await ctr.DisposeAsync();
         cts?.Dispose();
@@ -132,7 +138,7 @@ internal class MessageChannel<TReq, TRes> : IMessageChannel<TReq, TRes>
 
         var metaResponse = (await JsonSerializer.DeserializeAsync<ResponseModel<TRes>>(payloadStream, s_jsonOpts))!;
 
-        if (!_resTasks.TryRemove(metaResponse.ReplyTo, out var tcs))
+        if (!_resTasks.TryGetValue(metaResponse.ReplyTo, out var tcs))
             return;
 
         if (!metaResponse.Success)
