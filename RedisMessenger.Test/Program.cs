@@ -17,14 +17,14 @@ services.AddRedisMessenger(configure =>
     configure.ClientName = "test-client";
     configure.ChannelPrefix = "test";
 
-    configure.AddMessageHandler<TestHandler>("test-channel");
+    configure.AddMessageHandler<TestHandler>("dotnet-test-channel");
 });
 
 var provider = services.BuildServiceProvider();
 
 var messenger = provider.GetRequiredService<IRedisMessenger>();
 
-var channel = messenger.GetMessageChannel<TestRequest, TestResponse>("test-channel");
+var channel = messenger.GetMessageChannel<TestRequest, TestResponse>("node-test-channel");
 
 Stopwatch stopwatch = new();
 string? msg = Console.ReadLine();
@@ -43,11 +43,14 @@ do
         stopwatch.Stop();
 
         Console.WriteLine($"Query took {stopwatch.ElapsedMilliseconds} ms");
-        stopwatch.Reset();
     }
     catch
     {
         Console.WriteLine("exception");
+    }
+    finally
+    {
+        stopwatch.Reset();
     }
 
     Console.WriteLine(res?.Message ?? "Oops, bug");
